@@ -1,0 +1,6 @@
+**Security:**
+
+{{#each requirements}}
+- {{name}}{{#if scopes}} (scopes: {{#each scopes}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}){{/if}}
+{{/each}}
+

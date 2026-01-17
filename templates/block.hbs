@@ -1,0 +1,23 @@
+{{#if (eq type "section")}}
+{{> section this}}
+{{else if (eq type "overview.meta")}}
+{{> overview-meta this}}
+{{else if (eq type "overview.description")}}
+{{> overview-description this}}
+{{else if (eq type "overview.servers")}}
+{{> overview-servers this}}
+{{else if (eq type "op.header")}}
+{{> op-header this}}
+{{else if (eq type "op.description")}}
+{{> op-description this}}
+{{else if (eq type "op.parameters")}}
+{{> op-parameters this}}
+{{else if (eq type "op.requestBody")}}
+{{> op-requestBody this}}
+{{else if (eq type "op.example")}}
+{{> op-example this}}
+{{else if (eq type "op.responses")}}
+{{> op-responses this}}
+{{else if (eq type "op.security")}}
+{{> op-security this}}
+{{/if}}

@@ -1,0 +1,10 @@
+**Request Body:**{{#if required}} (required){{/if}}
+
+{{#if description}}
+{{description}}
+{{/if}}
+
+{{#each mediaTypes}}
+- Content-Type: `{{mediaType}}`
+{{/each}}
+

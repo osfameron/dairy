@@ -1,0 +1,10 @@
+**Parameters:**
+
+{{#each groups}}
+*{{title}} Parameters:*
+
+{{#each items}}
+- **{{name}}**{{#if required}} (required){{/if}}{{#if description}} - {{description}}{{/if}}
+{{/each}}
+
+{{/each}}

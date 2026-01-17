@@ -1,0 +1,11 @@
+{{#if (eq level 1)}}
+## {{title}}
+{{else if (eq level 2)}}
+### {{title}}
+{{else if (eq level 3)}}
+#### {{title}}
+{{/if}}
+
+{{#each children}}
+{{> block this}}
+{{/each}}
