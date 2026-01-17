@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx tsc && npx mocha -u qunit src/test/**/*.ts --require ts-node/register"
+    "test": "npx mocha -u qunit --require ts-node/register src/test/**/*.ts",
+    "build": "npx tsc -p tsconfig.json",
+    "typecheck": "npx tsc -p tsconfig.json --noEmit",
+    "dev": "npx ts-node src/index.ts"
   },
   "type": "module",
   "keywords": [],
