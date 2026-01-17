@@ -5,7 +5,7 @@ interface Page {
     slug: string    
 }
 
-type Block = SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock
+type Block = SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock | ServerBlock | SecurityBlock
 
 interface HeaderBlock {
     type: "op.header",
@@ -65,6 +65,22 @@ interface ExampleBlock {
     type: "op.example",
     mediaType: string,
     examples: any[]
+}
+
+interface ServerBlock {
+    type: "overview.servers",
+    servers: Array<{
+        url: string,
+        description?: string
+    }>
+}
+
+interface SecurityBlock {
+    type: "op.security",
+    requirements: Array<{
+        name: string,
+        scopes: string[]
+    }>
 }
 
 interface ParamItem {
@@ -151,6 +167,20 @@ function parsePageContainer(data: any): PageContainer {
             });
         }
 
+        // Add servers block if present
+        if (data.servers && data.servers.length > 0) {
+            mainSectionChildren.push({
+                type: "overview.servers",
+                servers: data.servers.map((server: any) => {
+                    const srv: { url: string, description?: string } = { url: server.url };
+                    if (server.description) {
+                        srv.description = server.description;
+                    }
+                    return srv;
+                })
+            });
+        }
+
         // Add external docs as description block if present
         if (data.externalDocs?.description) {
             mainSectionChildren.push({
@@ -162,7 +192,7 @@ function parsePageContainer(data: any): PageContainer {
         // Create level 2 sections for each tag/resource
         if (data.tags && data.tags.length > 0) {
             for (const tag of data.tags) {
-                const resourceSectionChildren: Array<SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock> = [];
+                const resourceSectionChildren: Array<SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock | ServerBlock | SecurityBlock> = [];
                 
                 // Add tag description if present
                 if (tag.description) {
@@ -189,7 +219,7 @@ function parsePageContainer(data: any): PageContainer {
                             
                             // Check if this operation is tagged with the current tag
                             if (operation.tags.includes(tag.name)) {
-                                const operationChildren: Array<SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock> = [];
+                                const operationChildren: Array<SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock | ServerBlock | SecurityBlock> = [];
                                 
                                 // Add operation description if present
                                 if (operation.description) {
@@ -328,19 +358,17 @@ function parsePageContainer(data: any): PageContainer {
                                         } = {
                                             status,
                                             description: response.description || '',
+                                            ...(mediaTypes.length > 0 ? {
+                                                primary: {
+                                                    mediaType: mediaTypes[0],
+                                                    schema: content[mediaTypes[0]]?.schema || {}
+                                                }
+                                            } : {}),
                                             alternates: mediaTypes.slice(1).map(mt => ({
                                                 mediaType: mt,
                                                 schema: content[mt]?.schema || {}
                                             }))
                                         };
-                                        
-                                        // Only add primary if there's content
-                                        if (mediaTypes.length > 0) {
-                                            responseItem.primary = {
-                                                mediaType: mediaTypes[0],
-                                                schema: content[mediaTypes[0]]?.schema || {}
-                                            };
-                                        }
 
                                         responses.push(responseItem);
                                         
@@ -375,6 +403,22 @@ function parsePageContainer(data: any): PageContainer {
                                         operationChildren.push({
                                             type: "op.responses",
                                             responses
+                                        });
+                                    }
+                                }
+                                
+                                // Add security block if present
+                                if (operation.security && operation.security.length > 0) {
+                                    const requirements = operation.security.flatMap((secReq: any) => 
+                                        Object.entries(secReq).map(([name, scopes]) => ({
+                                            name,
+                                            scopes: scopes as string[]
+                                        }))
+                                    );
+                                    if (requirements.length > 0) {
+                                        operationChildren.push({
+                                            type: "op.security",
+                                            requirements
                                         });
                                     }
                                 }
@@ -498,9 +542,25 @@ function parsePageContainer(data: any): PageContainer {
         });
     }
 
+    // Add security block if present
+    if (data.security && data.security.length > 0) {
+        const requirements = data.security.flatMap((secReq: any) => 
+            Object.entries(secReq).map(([name, scopes]) => ({
+                name,
+                scopes: scopes as string[]
+            }))
+        );
+        if (requirements.length > 0) {
+            blocks.push({
+                type: "op.security",
+                requirements
+            });
+        }
+    }
+
     return { page, blocks };
 }
 
 
-export type { Page, HeaderBlock, SectionBlock, OverviewMetaBlock, OverviewDescriptionBlock, DescriptionBlock, ParameterBlock, RequestBodyBlock, ExampleBlock, ParamItem, ResponseItem, ResponseBlock, PageContainer };
+export type { Page, HeaderBlock, SectionBlock, OverviewMetaBlock, OverviewDescriptionBlock, DescriptionBlock, ParameterBlock, RequestBodyBlock, ExampleBlock, ParamItem, ResponseItem, ResponseBlock, ServerBlock, SecurityBlock, PageContainer };
 export { parsePageContainer };
