@@ -102,6 +102,77 @@ test("basic", function () {
                       ]
                     }
                   ]
+                },
+                {
+                  type: 'op.example',
+                  mediaType: 'application/json',
+                  examples: [
+                    {
+                      summary: 'Example response showing no pets are matched',
+                      description: 'An example response, using `value` property',
+                      value: []
+                    },
+                    {
+                      summary: 'Example response showing a regular response',
+                      description: 'Two pets are returned in this example.',
+                      value: [{
+                        id: 1,
+                        category: {
+                          id: 1,
+                          name: 'cat'
+                        },
+                        name: 'fluffy',
+                        photoUrls: [
+                          'http://example.com/path/to/cat/1.jpg',
+                          'http://example.com/path/to/cat/2.jpg'
+                        ],
+                        tags: [{
+                          id: 1,
+                          name: 'cat'
+                        }],
+                        status: 'available'
+                      }, {
+                        id: 2,
+                        category: {
+                          id: 2,
+                          name: 'dog'
+                        },
+                        name: 'puppy',
+                        photoUrls: [
+                          'http://example.com/path/to/dog/1.jpg'
+                        ],
+                        tags: [{
+                          id: 2,
+                          name: 'dog'
+                        }],
+                        status: 'available'
+                      }]
+                    }
+                  ]
+                },
+                {
+                  type: 'op.responses',
+                  responses: [
+                    {
+                      status: '200',
+                      description: 'successful operation',
+                      primary: {
+                        mediaType: 'application/json',
+                        schema: {
+                          type: 'array',
+                          items: {
+                            '$ref': '#/components/schemas/Pet'
+                          }
+                        }
+                      },
+                      alternates: []
+                    },
+                    {
+                      status: '400',
+                      description: 'Invalid status value',
+                      alternates: []
+                    }
+                  ]
                 }
               ]
             },
@@ -144,6 +215,72 @@ test("basic", function () {
                           ]
                         }
                       ]
+                    }
+                  ]
+                },
+                {
+                  type: 'op.example',
+                  mediaType: 'application/json',
+                  examples: [
+                    {
+                      summary: 'Example response showing a regular response',
+                      description: 'Two pets are returned in this example.',
+                      value: [{
+                        id: 1,
+                        category: {
+                          id: 1,
+                          name: 'cat'
+                        },
+                        name: 'fluffy',
+                        photoUrls: [
+                          'http://example.com/path/to/cat/1.jpg',
+                          'http://example.com/path/to/cat/2.jpg'
+                        ],
+                        tags: [{
+                          id: 1,
+                          name: 'cat'
+                        }],
+                        status: 'available'
+                      }, {
+                        id: 2,
+                        category: {
+                          id: 2,
+                          name: 'dog'
+                        },
+                        name: 'puppy',
+                        photoUrls: [
+                          'http://example.com/path/to/dog/1.jpg'
+                        ],
+                        tags: [{
+                          id: 2,
+                          name: 'dog'
+                        }],
+                        status: 'available'
+                      }]
+                    }
+                  ]
+                },
+                {
+                  type: 'op.responses',
+                  responses: [
+                    {
+                      status: '200',
+                      description: 'successful operation',
+                      primary: {
+                        mediaType: 'application/json',
+                        schema: {
+                          type: 'array',
+                          items: {
+                            '$ref': '#/components/schemas/Pet'
+                          }
+                        }
+                      },
+                      alternates: []
+                    },
+                    {
+                      status: '400',
+                      description: 'Invalid status value',
+                      alternates: []
                     }
                   ]
                 }
@@ -336,6 +473,16 @@ test("basic", function () {
                       externalValue: 'http://example.com/examples/dog.xml'
                     }
                   ]
+                },
+                {
+                  type: 'op.responses',
+                  responses: [
+                    {
+                      status: '405',
+                      description: 'Invalid input',
+                      alternates: []
+                    }
+                  ]
                 }
               ]
             }
@@ -346,5 +493,6 @@ test("basic", function () {
       ]
     }
 
+  console.log(JSON.stringify(pageContainer, null, 2));
   assert.deepEqual(pageContainer, expected);
 })

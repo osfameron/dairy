@@ -305,6 +305,80 @@ function parsePageContainer(data: any): PageContainer {
                                     }
                                 }
                                 
+                                // Add responses block if present
+                                if (operation.responses) {
+                                    const responses: Array<{
+                                        status: string,
+                                        description: string,
+                                        primary?: ResponseItem,
+                                        alternates: ResponseItem[]
+                                    }> = [];
+                                    
+                                    const responseExamples: Array<ExampleBlock> = [];
+                                    
+                                    for (const [status, response] of Object.entries(operation.responses as any)) {
+                                        const content = response.content || {};
+                                        const mediaTypes = Object.keys(content);
+                                        
+                                        const responseItem: {
+                                            status: string,
+                                            description: string,
+                                            primary?: ResponseItem,
+                                            alternates: ResponseItem[]
+                                        } = {
+                                            status,
+                                            description: response.description || '',
+                                            alternates: mediaTypes.slice(1).map(mt => ({
+                                                mediaType: mt,
+                                                schema: content[mt]?.schema || {}
+                                            }))
+                                        };
+                                        
+                                        // Only add primary if there's content
+                                        if (mediaTypes.length > 0) {
+                                            responseItem.primary = {
+                                                mediaType: mediaTypes[0],
+                                                schema: content[mediaTypes[0]]?.schema || {}
+                                            };
+                                        }
+
+                                        responses.push(responseItem);
+                                        
+                                        // Collect example blocks for each response media type
+                                        for (const [mediaType, mediaContent] of Object.entries(content)) {
+                                            const mc = mediaContent as any;
+                                            // Check for both "examples" (plural) and "example" (singular)
+                                            if (mc?.examples && Object.keys(mc.examples).length > 0) {
+                                                responseExamples.push({
+                                                    type: "op.example",
+                                                    mediaType,
+                                                    examples: Object.values(mc.examples)
+                                                });
+                                            } else if (mc?.example) {
+                                                // Handle singular "example" field
+                                                responseExamples.push({
+                                                    type: "op.example",
+                                                    mediaType,
+                                                    examples: [mc.example]
+                                                });
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Add examples first
+                                    for (const ex of responseExamples) {
+                                        operationChildren.push(ex);
+                                    }
+                                    
+                                    // Then add responses block
+                                    if (responses.length > 0) {
+                                        operationChildren.push({
+                                            type: "op.responses",
+                                            responses
+                                        });
+                                    }
+                                }
+                                
                                 const operationSection: SectionBlock = {
                                     type: "section",
                                     title: operation.summary || operation.operationId || `${method.toUpperCase()} ${path}`,
