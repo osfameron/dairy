@@ -5,6 +5,8 @@ interface Page {
     slug: string    
 }
 
+type Block = SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock
+
 interface HeaderBlock {
     type: "op.header",
     title: string,
@@ -32,7 +34,7 @@ interface SectionBlock {
     type: "section",
     title: string,
     level: number,
-    children: Array<SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock>
+    children: Array<Block>
 }
 
 interface DescriptionBlock {
@@ -75,7 +77,7 @@ interface ParamItem {
     examples: any[]
 }
 
-interface ResponseItemFoo {
+interface ResponseItem {
   mediaType: string,
   schema: any,
   expand?: {
@@ -83,21 +85,20 @@ interface ResponseItemFoo {
     preview?: any
   } 
 } 
-type ResponseItem = ResponseItemFoo | null
 
 interface ResponseBlock {
     type: "op.responses",
     responses: Array<{
         status: string,
         description: string,
-        primary: ResponseItem,
+        primary?: ResponseItem,
         alternates: ResponseItem[]
     }>
 }
 
 interface PageContainer {
     page: Page,
-    blocks: Array<SectionBlock | HeaderBlock | OverviewMetaBlock | OverviewDescriptionBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock>
+    blocks: Array<Block>
 }
 
 function parsePageContainer(data: any): PageContainer {
