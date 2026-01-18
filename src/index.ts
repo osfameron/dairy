@@ -28,6 +28,5 @@ import { buildPageContainer } from './build.ts';
 import type { PageContainer } from './ir/types.ts';
 
 export function parsePageContainer(data: any): PageContainer {
-    const normalized = parseOpenAPIDocument(data);
-    return buildPageContainer(normalized);
+    return buildPageContainer(data);
 }

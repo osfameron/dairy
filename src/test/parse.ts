@@ -2,13 +2,12 @@
 
 import assert from "assert";
 import type { PageContainer } from "../index.ts";
-import  { parsePageContainer } from "../index.ts";
-import fs from "fs";
+import  { parsePageContainer, parseOpenAPIDocument } from "../index.ts";
 
 suite("Parser tests");
 
 test("basic", function () {
-  const data = JSON.parse(fs.readFileSync("src/test/petstore_oas3_requestBody_example.json", "utf-8"));
+  const data = parseOpenAPIDocument("src/test/petstore_oas3_requestBody_example.json");
 
   const pageContainer: PageContainer = parsePageContainer(data);
   
@@ -520,4 +519,4 @@ test("basic", function () {
     }
 
   assert.deepEqual(pageContainer, expected);
-})
+});
