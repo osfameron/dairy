@@ -87,7 +87,6 @@ test("basic", function () {
       ]
     }]
 
-    console.log(ir)
     assert.ok("hello")
 });
 

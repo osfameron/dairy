@@ -519,6 +519,5 @@ test("basic", function () {
       ]
     }
 
-  console.log(JSON.stringify(pageContainer, null, 2));
   assert.deepEqual(pageContainer, expected);
 })
