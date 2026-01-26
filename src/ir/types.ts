@@ -7,7 +7,7 @@ export interface Page {
     slug: string    
 }
 
-export type Block = SectionBlock | OverviewMetaBlock | OverviewDescriptionBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock | ServerBlock | SecurityBlock
+export type Block = SectionBlock | InfoBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock | ServerInfo | SecurityBlock
 
 export interface HeaderBlock {
     type: "op.header",
@@ -17,16 +17,34 @@ export interface HeaderBlock {
     operationId: string
 }
 
-export interface OverviewMetaBlock {
-    type: "overview.meta",
-    email?: string,
-    license?: {
-        name: string,
-        url?: string
-    },
-    termsOfService?: string
+export interface InfoBlock {
+    blocktype: "overview.info",
+    title: string;
+    description?: string;
+    termsOfService?: string;
+    contact?: ContactObject;
+    license?: LicenseObject;
+    version: string;
+    summary?: string;
+    openapi: string; // not sure if this should be here
+    servers?: ServerInfo[];
 }
 
+export interface LicenseObject {
+    name: string;
+    url?: string;
+    identifier?: string;
+}
+
+export interface ContactObject {
+    name?: string;
+    url?: string;
+    email?: string;
+}
+
+
+
+ 
 export interface OverviewDescriptionBlock {
     type: "overview.description",
     body: string
@@ -69,12 +87,16 @@ export interface ExampleBlock {
     examples: any[]
 }
 
-export interface ServerBlock {
-    type: "overview.servers",
-    servers: Array<{
-        url: string,
-        description?: string
-    }>
+export interface ServerInfo {
+    url: string,
+    description?: string,
+    variables?: Record<string, ServerVariableObject>;
+}
+
+export interface ServerVariableObject {
+    enum?: string[] | number[];
+    default: string | number;
+    description?: string;
 }
 
 export interface SecurityBlock {
