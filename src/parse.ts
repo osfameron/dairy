@@ -60,11 +60,17 @@ function processInfo(context: DairyContext): InfoBlock {
   }
 }
 
-function sectionBlock(context: DairyContext, sectiontype: string, title: string, makeChildren: (context: DairyContext) => Block[]) : Block {
+function sectionBlock(
+  context: DairyContext, 
+  sectiontype: string, 
+  title: string,
+  args: Object,
+  makeChildren: (context: DairyContext) => Block[]) : Block {
   return {
     blocktype: "section",
     sectiontype,
     title,
+    ...args,
     level: context.depth,
     children: makeChildren({...context, depth: context.depth + 1}).flat()
   }
@@ -103,6 +109,7 @@ function tagBlock(context: DairyContext, name: string, description: string = "",
     context,
     "tag",
     name,
+    {},
     (context) => [
       textBlock(context, "overview.description", description),
       operations.map(op => operationBlock(context, op))
@@ -122,6 +129,7 @@ function operationBlock(context: DairyContext, op: Operation) : Block {
     context,
     "operation",
     op.schema.summary || op.schema.operationId || `${op.method.toUpperCase()} ${op.path}`,
+    {},
     (context) => [
       opHeaderBlock(context, op),
       textBlock(context, "op.description", op.schema.description || ""),
@@ -135,23 +143,153 @@ function operationBlock(context: DairyContext, op: Operation) : Block {
 
 function responseBlock(context: DairyContext, op: Operation, statusCode: string) : Block {
   const response = op.getResponseByStatusCode(statusCode)
-  const content = 
-    Object.fromEntries(
-      Object.entries(response.content || {}).map(
-        ([mediaType, mediaObj]) => [mediaType, parseSchema(mediaObj.schema)]))
-
   
-  return {
-    blocktype: "op.response",
-    statusCode,
-    content
+  return sectionBlock(
+    context,
+    "response",
+    `Response ${statusCode}`,
+    {
+      statusCode,
+      description: response.description || ""
+    },
+    (context) => Object.entries(response.content || {}).map(
+        ([mediaType, mediaObj]) => sectionBlock(
+          context,
+          "response.content",
+          mediaType,
+          {},
+          (context) => [
+            parseSchema(context, mediaObj.schema)
+          ]
+        )
+      )
+    )
+}
+
+function parseSchemaObject(context: DairyContext, obj) {
+  if (obj.type === 'object' || obj.properties || obj.additionalProperties) {
+    return sectionBlock(
+      context,
+      'schema.object',
+      'Object',
+      {},
+      (context) => {
+        const properties = Object.entries(obj.properties || {}).map(
+          ([propName, propSchema]) => {
+            return sectionBlock(
+              context,
+              'schema.property',
+              propName,
+              {},
+              (context) => [
+                parseSchema(context, propSchema)
+              ]
+            )
+          }
+        )
+        return properties
+      }
+    )
   }
 }
 
-function parseSchema(schema: any) : Object {
-  console.log(schema)
-  // process.exit(1)
+function parseSchemaArray(context: DairyContext, arr) {
+  if (arr.type === 'array' && arr.items) {
+    return sectionBlock(
+      context,
+      'schema.array',
+      'Array',
+      {},
+      (context) => [
+        parseSchema(context, arr.items)
+      ]
+    )
+  }
+}
+
+function parseSchemaString(context: DairyContext, schema) {
+  if (schema.type === 'string') {
+    return {
+      blocktype: 'schema.string',
+      format: schema.format || 'string',
+      ...schema
+    }
+  }
+}
+
+function parseSchemaNumber(context: DairyContext, schema) {
+  if (schema.type === 'number') {
+    return {
+      blocktype: 'schema.number',
+      format: schema.format || 'number',
+      ...schema
+    }
+  }
+}
+
+function parseSchemaInteger(context: DairyContext, schema) {
+  if (schema.type === 'integer') {
+    return {
+      blocktype: 'schema.integer',
+      format: schema.format || 'integer',
+      ...schema
+    }
+  }
+}
+
+function parseSchemaBoolean(context: DairyContext, schema) {
+  if (schema.type === 'boolean') {
+    return {
+      blocktype: 'schema.boolean',
+      ...schema
+    }
+  }
+}
+
+function parseSchemaOneOf(context: DairyContext, schema) {
+  if (schema.oneOf) {
+    return sectionBlock(
+      context,
+      'schema.oneOf',
+      'One Of (oneOf)',
+      {},
+      (context) => 
+        schema.oneOf.map((subSchema) => parseSchema(context, subSchema))
+    )
+  }
+}
+
+function parseSchemaAnyOf(context: DairyContext, schema) {
+  if (schema.anyOf) {
+    return sectionBlock(
+      context,
+      'schema.anyOf',
+      'Any Of',
+      {},
+      (context) => 
+        schema.anyOf.map((subSchema) => parseSchema(context, subSchema))
+    )
+  }
+}
+
+function parseSchemaFallback(context, schema) {
+ console.log(schema)
+  process.exit(1)
   return schema as Object
+}
+
+function parseSchema(context: DairyContext, schema: any) : Object {
+  return (
+    parseSchemaObject(context, schema) || 
+    parseSchemaArray(context, schema) ||
+    parseSchemaString(context, schema) ||
+    parseSchemaNumber(context, schema) ||
+    parseSchemaInteger(context, schema) ||
+    parseSchemaOneOf(context, schema) ||
+    parseSchemaAnyOf(context, schema) ||
+    parseSchemaBoolean(context, schema) ||
+    parseSchemaFallback(context, schema)
+  )
 }
 
 function responsesBlocks(context: DairyContext, op: Operation) : Block[] {
@@ -163,6 +301,7 @@ function responsesBlocks(context: DairyContext, op: Operation) : Block[] {
       context,
       "responses",
       "Responses",
+      {},
       (context) => responses
     )]
   } else {
@@ -183,6 +322,7 @@ function requestBodyBlocks(context: DairyContext, op: Operation) : Block[] {
       context,
       "requestBodies",
       "Request Bodies",
+      {},
       (context) => requestBodies
     )]
   } else {
@@ -222,6 +362,7 @@ function paramsBlocks(context: DairyContext, op: Operation) : Block {
       context,
       `params.${pt}`,
       `${pt.charAt(0).toUpperCase() + pt.slice(1)} Parameters`,
+      {},
       (context) => [
         params.map(p => {
           return {
