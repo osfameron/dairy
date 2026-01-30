@@ -1,23 +1,26 @@
-{{#if (eq type "section")}}
+{{#if (eq blocktype "section")}}
 {{> section this}}
-{{else if (eq type "overview.meta")}}
+{{else if (eq blocktype "overview.info")}}
+{{> overview-info this}}
+{{else if (eq blocktype "overview.meta")}}
 {{> overview-meta this}}
-{{else if (eq type "overview.description")}}
-{{> overview-description this}}
-{{else if (eq type "overview.servers")}}
+{{else if (eq blocktype "overview.description")}}
+{{else if (eq blocktype "overview.servers")}}
 {{> overview-servers this}}
-{{else if (eq type "op.header")}}
+{{else if (eq blocktype "op.header")}}
 {{> op-header this}}
-{{else if (eq type "op.description")}}
+{{else if (eq blocktype "op.description")}}
 {{> op-description this}}
-{{else if (eq type "op.parameters")}}
-{{> op-parameters this}}
-{{else if (eq type "op.requestBody")}}
+{{else if (eq blocktype "op.parameter")}}
+{{> op-parameter this}}
+{{else if (eq blocktype "op.requestBody")}}
 {{> op-requestBody this}}
-{{else if (eq type "op.example")}}
+{{else if (eq blocktype "op.example")}}
 {{> op-example this}}
-{{else if (eq type "op.responses")}}
-{{> op-responses this}}
-{{else if (eq type "op.security")}}
+{{else if (eq blocktype "op.response")}}
+{{> op-response this}}
+{{else if (eq blocktype "op.security")}}
 {{> op-security this}}
+{{else}}
+* Unknown {{blocktype}} {{{json this}}}
 {{/if}}

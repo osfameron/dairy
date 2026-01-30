@@ -3,7 +3,7 @@
 import fs from 'fs';
 import Oas from 'oas';
 import yaml from 'js-yaml'
-import type {InfoBlock, LicenseObject, ContactObject} from 'ir/types.ts';
+import type {InfoBlock, LicenseObject, ContactObject, Block} from './ir/types.ts';
 import type { OASDocument } from 'oas/types';
 import path from 'path';
 import type { Operation } from 'oas/operation';
@@ -16,6 +16,11 @@ if (!specFile) {
   process.exit(1);
 }
 
+type DairyContext = {
+  spec: Oas,
+  depth: number
+}
+
 try {
   const data = yaml.load(
     fs.readFileSync(specFile, 'utf8')) as OASDocument
@@ -23,7 +28,7 @@ try {
   await spec.dereference()
   spec.getCircularReferences()
 
-  type DairyContext = {spec: Oas, depth: number  }
+
   const context : DairyContext = {
     spec,
     depth: 0
@@ -33,14 +38,15 @@ try {
     processInfo,
     taggedOperations
   ]
-  const blocks = processors.flatMap(p => p(context))
+  const blocks : Block[] = 
+    processors.flatMap(
+      p => p(context))
 
-
-  console.dir(blocks, {depth: 7} );
-
+  process.stdout.write(JSON.stringify(blocks))
 
 } catch (error) {
   console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(error)
   process.exit(1);
 }
 
@@ -54,16 +60,17 @@ function processInfo(context: DairyContext): InfoBlock {
   }
 }
 
-function sectionBlock(context: DairyContext, title: string, makeChildren: (context: DairyContext) => Array<any>) {
+function sectionBlock(context: DairyContext, sectiontype: string, title: string, makeChildren: (context: DairyContext) => Block[]) : Block {
   return {
-    type: "section",
+    blocktype: "section",
+    sectiontype,
     title,
     level: context.depth,
-    children: makeChildren({...context, depth: context.depth + 1})
+    children: makeChildren({...context, depth: context.depth + 1}).flat()
   }
 }
 
-function taggedOperations(context: DairyContext) {
+function taggedOperations(context: DairyContext) : Block[] {
   const { spec } = context;
 
   const tags = spec.api.tags!
@@ -77,6 +84,7 @@ function taggedOperations(context: DairyContext) {
       }
     }
   }
+
   // return categorized
   return tags.flatMap(({name,description}) => {
       const operations = categorized[name]
@@ -93,6 +101,7 @@ function taggedOperations(context: DairyContext) {
 function tagBlock(context: DairyContext, name: string, description: string = "", operations : Operation[] = []) {
   return sectionBlock(
     context,
+    "tag",
     name,
     (context) => [
       textBlock(context, "overview.description", description),
@@ -101,28 +110,137 @@ function tagBlock(context: DairyContext, name: string, description: string = "",
   )
 }
 
-function textBlock(context: DairyContext, type: string, body: string) {
+function textBlock(context: DairyContext, blocktype: string, body: string) : Block {
   return {
-    type,
+    blocktype,
     body
   }
 }
 
-function operationBlock(context: DairyContext, op: Operation) {
+function operationBlock(context: DairyContext, op: Operation) : Block {
   return sectionBlock(
     context,
+    "operation",
     op.schema.summary || op.schema.operationId || `${op.method.toUpperCase()} ${op.path}`,
     (context) => [
       opHeaderBlock(context, op),
-      textBlock(context, "op.description", op.schema.description || "")
+      textBlock(context, "op.description", op.schema.description || ""),
+      ...securityBlocks(context, op),
+      ...paramsBlocks(context, op),
+      ...responsesBlocks(context, op),
+      ...requestBodyBlocks(context, op)
     ]
   )
 }
 
-function opHeaderBlock(context: DairyContext, op: Operation) {
+function responseBlock(context: DairyContext, op: Operation, statusCode: string) : Block {
+  const response = op.getResponseByStatusCode(statusCode)
+  const content = 
+    Object.fromEntries(
+      Object.entries(response.content || {}).map(
+        ([mediaType, mediaObj]) => [mediaType, parseSchema(mediaObj.schema)]))
+
+  
+  return {
+    blocktype: "op.response",
+    statusCode,
+    content
+  }
+}
+
+function parseSchema(schema: any) : Object {
+  console.log(schema)
+  // process.exit(1)
+  return schema as Object
+}
+
+function responsesBlocks(context: DairyContext, op: Operation) : Block[] {
+  const responses = op.getResponseStatusCodes().map(
+    statusCode => responseBlock(context, op, statusCode))
+
+  if (responses.length) {
+    console.log("RETURNING RESPONSES BLOCK")
+    return [sectionBlock(
+      context,
+      "responses",
+      "Responses",
+      (context) => responses
+    )]
+  } else {
+    return []
+  }
+}
+
+function requestBodyBlocks(context: DairyContext, op: Operation) : Block[] {
+  const requestBodies = op.getRequestBodyMediaTypes().map(
+    mediaType => { return {
+      blocktype: "op.requestBody",
+      mediaType,
+      ...(op.getRequestBody(mediaType) as Object)
+    }})
+
+  if (requestBodies.length) {
+    return [sectionBlock(
+      context,
+      "requestBodies",
+      "Request Bodies",
+      (context) => requestBodies
+    )]
+  } else {
+    return []
+  }
+}
+
+function securityBlocks(context: DairyContext,  op: Operation) {
+  const security = op.getSecurityWithTypes()
+
+  // figure out why it's double nested
+  return security.flat().flatMap(s => {
+    return {
+      blocktype: "op.security",
+      ...s
+    }
+  })
+}
+
+function paramsBlocks(context: DairyContext, op: Operation) : Block {
+  const params = op.getParameters()
+
+  type paramType = "path" | "query" | "header" | "cookie"
+  const paramsByType = Object.groupBy(params, p => p.in) as Record<paramType, ParameterObject[]>
+  const paramTypes : paramType[] = [
+    "path",
+    "query",
+    "header",
+    "cookie"
+  ]
+  const sections = paramTypes.flatMap(pt => paramsByType[pt] ? [[pt, paramsByType[pt]]] : []) as 
+    [paramType, ParameterObject[]][]
+
+  return sections.map(([pt, params]) => 
+      // throw new Error(`${pt} ${typeof pt}, ${params} ${typeof params}`);
+    sectionBlock(
+      context,
+      `params.${pt}`,
+      `${pt.charAt(0).toUpperCase() + pt.slice(1)} Parameters`,
+      (context) => [
+        params.map(p => {
+          return {
+            blocktype: "op.parameter",
+            ...p
+          }
+        })
+      ]
+    )
+  )
+}
+
+
+
+function opHeaderBlock(context: DairyContext, op: Operation) : Block {
   return {
     title: op.schema.summary || op.schema.operationId || `${op.method.toUpperCase()} ${op.path}`,
-    type: "op.header",
+    blocktype: "op.header",
     method: op.method.toUpperCase(),
     path: op.path,
     operationId: op.schema.operationId || ''

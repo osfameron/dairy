@@ -10,7 +10,7 @@ export interface Page {
 export type Block = SectionBlock | InfoBlock | HeaderBlock | DescriptionBlock | ParameterBlock | RequestBodyBlock | ExampleBlock | ResponseBlock | ServerInfo | SecurityBlock
 
 export interface HeaderBlock {
-    type: "op.header",
+    blocktype: "op.header",
     title: string,
     method: string,
     path: string,
@@ -51,19 +51,19 @@ export interface OverviewDescriptionBlock {
 }
 
 export interface SectionBlock {
-    type: "section",
+    blocktype: "section",
     title: string,
     level: number,
     children: Array<Block>
 }
 
 export interface DescriptionBlock {
-    type: "op.description",
+    blocktype: "op.description",
     body: string
 }
 
 export interface ParameterBlock {
-    type: "op.parameters",
+    blocktype: "op.parameters",
     groups: Array<{
         in: string,
         title: string,
@@ -72,7 +72,7 @@ export interface ParameterBlock {
 }
 
 export interface RequestBodyBlock {
-    type: "op.requestBody",
+    blocktype: "op.requestBody",
     description?: string,
     required?: boolean,
     mediaTypes: Array<{
@@ -82,7 +82,7 @@ export interface RequestBodyBlock {
 }
 
 export interface ExampleBlock {
-    type: "op.example",
+    blocktype: "op.example",
     mediaType: string,
     examples: any[]
 }
@@ -100,7 +100,7 @@ export interface ServerVariableObject {
 }
 
 export interface SecurityBlock {
-    type: "op.security",
+    blocktype: "op.security",
     requirements: Array<{
         name: string,
         scopes: string[]
@@ -127,7 +127,7 @@ export interface ResponseItem {
 } 
 
 export interface ResponseBlock {
-    type: "op.responses",
+    blocktype: "op.responses",
     responses: Array<{
         status: string,
         description: string,

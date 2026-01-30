@@ -13,7 +13,7 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-const templatesDir = args[0];
+const templatesDir = args[0] || '.';
 
 if (!fs.existsSync(templatesDir)) {
   console.error(`Error: Templates directory not found: ${templatesDir}`);
