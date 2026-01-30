@@ -159,7 +159,6 @@ function responsesBlocks(context: DairyContext, op: Operation) : Block[] {
     statusCode => responseBlock(context, op, statusCode))
 
   if (responses.length) {
-    console.log("RETURNING RESPONSES BLOCK")
     return [sectionBlock(
       context,
       "responses",
